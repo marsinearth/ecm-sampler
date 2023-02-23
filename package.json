@@ -1,0 +1,11 @@
+{
+  "name": "ecm-sampler",
+  "version": "1.0.0",
+  "description": "ecm sample sync app",
+  "main": "index.js",
+  "scripts": {
+    "test": "npm test"
+  },
+  "author": "Mars Kim",
+  "license": "ISC"
+}
