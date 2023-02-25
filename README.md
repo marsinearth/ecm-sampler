@@ -11,3 +11,8 @@
 - [node-postgres(pg)](https://node-postgres.com/)
 - ts-node and typescript
 - [bluebird](http://bluebirdjs.com/docs/getting-started.html)
+
+## todos
+
+1. @fastify/aws-lambda 사용
+2. /sync를 진행 percentage를 표시하도록 수정
