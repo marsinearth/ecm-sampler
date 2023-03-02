@@ -6,7 +6,9 @@
 
 - [fastify](https://www.fastify.io/)
 - [puppeteer](https://pptr.dev/)
-- yarn berry PnP zero install
+- [chrome-aws-lambda](https://github.com/alixaxel/chrome-aws-lambda)
+- [node-tap](https://node-tap.org/)
+- AWS SAM
 - AWS RDS Postgres
 - [node-postgres(pg)](https://node-postgres.com/)
 - ts-node and typescript
@@ -14,6 +16,7 @@
 
 ## todos
 
-1. @fastify/aws-lambda 사용
+1. ~~@fastify/aws-lambda 사용~~
 2. /sync를 진행 percentage를 표시하도록 수정
-3. 테스트 코를 추가해서 크롤링 대상 웹사이트가 바뀌었는지 미리 감지할 수 있게 하기
+3. ~~테스트 코드를 추가해서 크롤링 대상 웹사이트가 바뀌었는지 미리 감지할 수 있게 하기~~
+4. 위의 테스트 코드를 크론잡으로 주기적으로 돌려서 자동으로 확인하도록 만들기

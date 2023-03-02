@@ -1,0 +1,54 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  ecm-smapler
+
+  Sample SAM Template for ecm-smapler
+
+# More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
+Globals:
+  Function:
+    Timeout: 3
+
+Resources:
+  EcmSampler:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      Handler: dist/lambda.handler
+      PackageType: Zip
+      Runtime: nodejs16.x
+      Architectures:
+        - x86_64
+      Timeout: 300
+      MemorySize: 4096
+      FunctionUrlConfig:
+        AuthType: NONE
+        Cors:
+          AllowOrigins:
+            - "*"
+      Events:
+        RootEndpoint:
+          Type: HttpApi
+          Properties:
+            Path: /
+            Method: ANY
+        AppEventAPI:
+          Type: HttpApi # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Properties:
+            Path: /{proxy+}
+            Method: ANY
+
+
+Outputs:
+  # ServerlessRestApi is an implicit API created out of Events key under Serverless::Function
+  # Find out more about other implicit resources you can reference within SAM
+  # https://github.com/awslabs/serverless-application-model/blob/master/docs/internals/generated_resources.rst#api
+  AppEventAPI:
+    Description: "API Gateway endpoint URL for Prod stage for EcmSampler function"
+    Value: !Sub "https://${ServerlessHttpApi}.execute-api.${AWS::Region}.amazonaws.com/"
+  EcmSampler:
+    Description: "EcmSampler Lambda Function ARN"
+    Value: !GetAtt EcmSampler.Arn
+  EcmSamplerIamRole:
+    Description: "Implicit IAM Role created for EcmSampler function"
+    Value: !GetAtt EcmSamplerRole.Arn
