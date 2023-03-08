@@ -12,6 +12,9 @@ test('crawl and sync the db', async (t) => {
   const res = await app.inject({
     method: 'GET',
     url: '/sync',
+    query: {
+      mode: 'test',
+    },
   });
 
   t.test('when sync has no error', (t) => {

@@ -32,6 +32,7 @@ const schema = {
     'PGDATABASE',
     'PGHOST',
     'PGPASSWORD',
+    'SLACK_WEBHOOK',
   ],
   properties: {
     PAGE: {
@@ -77,6 +78,9 @@ const schema = {
       type: 'string',
     },
     PGPASSWORD: {
+      type: 'string',
+    },
+    SLACK_WEBHOOK: {
       type: 'string',
     },
   },

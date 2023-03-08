@@ -5,10 +5,7 @@
   "httpMethod": "GET",
   "isBase64Encoded": true,
   "queryStringParameters": {
-    "foo": "bar"
-  },
-  "multiValueQueryStringParameters": {
-    "foo": ["bar"]
+    "mode": "test"
   },
   "pathParameters": {
     "proxy": "/path/to/resource"
