@@ -16,7 +16,7 @@ Resources:
     Properties:
       Handler: dist/lambda.handler
       PackageType: Zip
-      Runtime: nodejs16.x
+      Runtime: nodejs14.x
       Architectures:
         - x86_64
       FunctionUrlConfig:
@@ -35,7 +35,7 @@ Resources:
     Properties:
       Handler: dist/lambda.handler
       PackageType: Zip
-      Runtime: nodejs16.x
+      Runtime: nodejs14.x
       Architectures:
         - x86_64
       Timeout: 300
