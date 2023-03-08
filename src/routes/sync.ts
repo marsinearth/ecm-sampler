@@ -1,9 +1,8 @@
+import axios from 'axios';
 import bluebird from 'bluebird';
 import type { FastifyInstance, FastifyPluginAsync } from 'fastify';
 import format from 'pg-format';
 import type { Browser, Page } from 'puppeteer-core';
-
-const fetch = require('node-fetch');
 
 type AlbumItem = [string, string, string, string, string, string];
 type WithBrowserFN = (browser: Browser, urls: string[]) => Promise<AlbumItem[]>;
@@ -26,7 +25,7 @@ const getPuppeteer = async (): Promise<Browser | void> => {
           headless: chromium.headless,
         });
       } catch (_error) {
-        throw error;
+        console.warn(_error);
       }
     }
   }
@@ -66,6 +65,8 @@ async function withBrowser(fastify: FastifyInstance, fn: WithBrowserFN, mode?: s
       products = [products.shift() as string];
       console.log("it's on test mode!");
     }
+
+    console.log({ products });
 
     try {
       return await fn(browser, products);
@@ -110,7 +111,8 @@ async function extractSampleAudioInfo(fastify: FastifyInstance, mode?: string): 
             const audioEvent = await page.$(fastify.config.AUDIO_PLAYER);
             if (audioEvent) {
               sample_url = await audioEvent.$eval(fastify.config.AUDIO, (el) => (el as HTMLAudioElement).src);
-              id = url.split('/').at(-2) as string;
+              const urlArr = url?.split('/');
+              id = urlArr?.length > 2 ? urlArr[urlArr.length - 2] : '';
               track_title = await audioEvent.$eval(fastify.config.TRACK_TITLE, (el) => el.textContent ?? '');
 
               const productTopArea = await page.$(fastify.config.ALBUM_INFO);
@@ -139,31 +141,32 @@ async function extractSampleAudioInfo(fastify: FastifyInstance, mode?: string): 
   return results?.filter(([id]) => !!id) ?? [];
 }
 
-async function postToSlack(fastify: FastifyInstance, rows?: AlbumItem[], err?: Error) {
+async function postToSlack(fastify: FastifyInstance, mode?: string, rows?: AlbumItem[], err?: Error) {
   let text = '';
   let color = 'good';
   if (!!rows) {
     const rowCount = rows?.length ?? 0;
     text = `완료: 총 ${rowCount}개의 엔트리 추가${!!rowCount ? `: ${rows.join(', ')}` : ''}`;
+    if (mode === 'test') {
+      text = '테스트 완료';
+    }
   } else if (err) {
-    text = `에러발생: ${err}`;
+    text = `${mode === 'test' ? '테스트 ' : ''}에러발생: ${err}`;
     color = 'danger';
   }
   try {
-    const res = await fetch(fastify.config.SLACK_WEBHOOK, {
-      method: 'post',
-      body: JSON.stringify({
-        attachments: [
-          {
-            text,
-            color,
-          },
-        ],
-      }),
+    const res = await axios.post(fastify.config.SLACK_WEBHOOK, {
+      attachments: [
+        {
+          text,
+          color,
+        },
+      ],
     });
     console.log(`slack sent ${res}`);
   } catch (err) {
     console.warn(`slack message err: ${err}`);
+    await postToSlack(fastify, mode, undefined, err as Error);
   }
 }
 
@@ -182,10 +185,10 @@ const sync: FastifyPluginAsync = async (fastify) => {
       const query = format(fastify.config.INSERT_QUERY, filteredResults);
       console.log({ query });
       const { rows, rowCount } = await client.query<AlbumItem>(query);
-      await postToSlack(fastify, rows);
+      await postToSlack(fastify, mode, rows);
       return { rows, rowCount };
     } catch (err) {
-      await postToSlack(fastify, undefined, err as Error);
+      await postToSlack(fastify, mode, undefined, err as Error);
     } finally {
       client.release();
     }
