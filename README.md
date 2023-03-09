@@ -13,7 +13,7 @@
 - [node-postgres(pg)](https://node-postgres.com/)
 - ts-node and typescript
 - [bluebird](http://bluebirdjs.com/docs/getting-started.html)
-- [Slack Incomming Webhook](https://personalnotif-5j53202.slack.com/apps/A0F7XDUAZ--?tab=more_info)
+- [Slack Incoming Webhook](https://personalnotif-5j53202.slack.com/apps/A0F7XDUAZ--?tab=more_info)
 
 ## todos
 
