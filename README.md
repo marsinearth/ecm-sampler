@@ -1,6 +1,6 @@
 # ecm-sampler
 
-- ecmrecords.com에서 무료로 제공하는 sample music들을 puppeteer로 scraping하여 db로 저장 (/sync), 저장된 db를 읽어오는 (/) 백엔드 서버.
+- [ECM Records](https://ecmrecords.com)에서 무료로 제공하는 sample music들을 puppeteer로 scraping하여 db로 저장 (/sync), 저장된 db를 읽어오는 (/) 백엔드 서버.
 
 ## 사용된 package들
 
@@ -13,6 +13,7 @@
 - [node-postgres(pg)](https://node-postgres.com/)
 - ts-node and typescript
 - [bluebird](http://bluebirdjs.com/docs/getting-started.html)
+- [Slack Incomming Webhook](https://personalnotif-5j53202.slack.com/apps/A0F7XDUAZ--?tab=more_info)
 
 ## todos
 
