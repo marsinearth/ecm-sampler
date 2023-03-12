@@ -1,12 +1,15 @@
 import axios from 'axios';
 import bluebird from 'bluebird';
 import type { FastifyInstance, FastifyPluginAsync } from 'fastify';
+import { FromSchema } from 'json-schema-to-ts';
 import format from 'pg-format';
 import type { Browser, Page } from 'puppeteer-core';
+import albumSchema from '../models/album';
 
 type AlbumItem = [string, string, string, string, string, string];
 type WithBrowserFN = (browser: Browser, urls: string[]) => Promise<AlbumItem[]>;
 type WithPageFN = (page: Page) => Promise<AlbumItem>;
+type AlbumEntry = FromSchema<typeof albumSchema>;
 
 const getPuppeteer = async (): Promise<Browser | void> => {
   try {
@@ -141,12 +144,13 @@ async function extractSampleAudioInfo(fastify: FastifyInstance, mode?: string): 
   return results?.filter(([id]) => !!id) ?? [];
 }
 
-async function postToSlack(fastify: FastifyInstance, mode?: string, rows?: AlbumItem[], err?: Error) {
+async function postToSlack(fastify: FastifyInstance, mode?: string, rows?: AlbumEntry[], err?: Error) {
   let text = '';
   let color = 'good';
   if (!!rows) {
     const rowCount = rows?.length ?? 0;
-    text = `완료: 총 ${rowCount}개의 엔트리 추가${!!rowCount ? `: ${rows.join(', ')}` : ''}`;
+
+    text = `완료: 총 ${rowCount}개의 엔트리 추가${!!rowCount ? `: ${rows?.map(({ id }) => id).join(', ')}` : ''}`;
     if (mode === 'test') {
       text = '테스트 완료';
     }
@@ -163,7 +167,8 @@ async function postToSlack(fastify: FastifyInstance, mode?: string, rows?: Album
         },
       ],
     });
-    console.log(`slack sent ${res}`);
+    console.log({ res });
+    console.log(`slack sent`);
   } catch (err) {
     console.warn(`slack message err: ${err}`);
     await postToSlack(fastify, mode, undefined, err as Error);
@@ -183,8 +188,8 @@ const sync: FastifyPluginAsync = async (fastify) => {
 
     try {
       const query = format(fastify.config.INSERT_QUERY, filteredResults);
-      console.log({ query });
-      const { rows, rowCount } = await client.query<AlbumItem>(query);
+      const { rows, rowCount } = await client.query<AlbumEntry>(query);
+      console.log({ query, rows, rowCount });
       await postToSlack(fastify, mode, rows);
       return { rows, rowCount };
     } catch (err) {
