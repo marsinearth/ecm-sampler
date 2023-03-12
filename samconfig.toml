@@ -5,7 +5,7 @@ version = 0.1
 [default]
 [default.global]
 [default.global.parameters]
-stack_name = "ecm-smapler"
+stack_name = "ecm-sampler"
 
 [default.build]
 [default.build.parameters]

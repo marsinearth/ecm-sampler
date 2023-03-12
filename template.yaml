@@ -1,9 +1,9 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
 Description: >
-  ecm-smapler
+  ecm-sampler
 
-  Sample SAM Template for ecm-smapler
+  Sample SAM Template for ecm-sampler
 
 # More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
 Globals:
