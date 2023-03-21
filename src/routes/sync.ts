@@ -183,6 +183,7 @@ const sync: FastifyPluginAsync = async (fastify) => {
     console.log({ filteredResults, mode });
 
     if (!filteredResults.length) {
+      postToSlack(fastify, mode, []);
       return { rows: [], rowCount: 0 };
     }
 
