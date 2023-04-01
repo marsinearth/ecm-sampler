@@ -10,13 +10,16 @@ type AlbumItem = [string, string, string, string, string, string];
 type WithBrowserFN = (browser: Browser, urls: string[]) => Promise<AlbumItem[]>;
 type WithPageFN = (page: Page) => Promise<AlbumItem>;
 type AlbumEntry = FromSchema<typeof albumSchema>;
+type QueryParams = {
+  mode?: string;
+  pageNum: number;
+};
 
 const getPuppeteer = async (): Promise<Browser | void> => {
   try {
     const puppeteer = require('puppeteer');
     return await puppeteer.launch();
   } catch (error: any) {
-    console.log({ error });
     if (error.code === 'MODULE_NOT_FOUND') {
       console.log('Error(This package is used for local development) ', JSON.stringify(error, null, 2));
       try {
@@ -48,11 +51,11 @@ const schema = {
   },
 };
 
-async function withBrowser(fastify: FastifyInstance, fn: WithBrowserFN, mode?: string) {
+async function withBrowser(fastify: FastifyInstance, pageNum: number, fn: WithBrowserFN, mode?: string) {
   const browser = await getPuppeteer();
   if (browser) {
     const page = await browser.newPage();
-    await page.goto(process.env.PAGE ?? '');
+    await page.goto(process.env.PAGE ? `${process.env.PAGE}/page/${pageNum}` : '');
     let products: string[] = await page.$$eval(fastify.config.PRODUCT_LINK, (list) =>
       list.map((el) => (el as HTMLAnchorElement).href),
     );
@@ -65,7 +68,7 @@ async function withBrowser(fastify: FastifyInstance, fn: WithBrowserFN, mode?: s
 
     if (mode === 'test') {
       // when it's test mode, it's just for checking out whether website's crawling points are valid, just process for the first detail page due to saving time
-      products = [products.shift() as string];
+      products = [products[0]];
       console.log("it's on test mode!");
     }
 
@@ -92,9 +95,10 @@ function withPage(browser: Browser) {
   };
 }
 
-async function extractSampleAudioInfo(fastify: FastifyInstance, mode?: string): Promise<AlbumItem[]> {
+async function extractSampleAudioInfo(fastify: FastifyInstance, pageNum: number, mode?: string): Promise<AlbumItem[]> {
   const results = await withBrowser(
     fastify,
+    pageNum,
     async (browser: Browser, urls: string[]) => {
       return bluebird.map(
         urls,
@@ -122,10 +126,12 @@ async function extractSampleAudioInfo(fastify: FastifyInstance, mode?: string): 
               if (productTopArea) {
                 album_title = await productTopArea.$eval(fastify.config.ALBUM_TITLE, (el) => el.textContent ?? '');
                 album_artist = await productTopArea.$eval(fastify.config.ALBUM_ARTIST, (el) => el.textContent ?? '');
-                album_image = await productTopArea.$$eval(
+                const album_image_1000 = await productTopArea.$$eval(
                   fastify.config.ALBUM_IMAGE,
                   (els) => (els[0] as HTMLAnchorElement).href,
                 );
+                // change source size
+                album_image = album_image_1000.replace('_1000', '_300');
               } else {
                 console.warn(`page structure of album info has been changed on: ${url}`);
               }
@@ -177,9 +183,9 @@ async function postToSlack(fastify: FastifyInstance, mode?: string, rows?: Album
 
 const sync: FastifyPluginAsync = async (fastify) => {
   fastify.get('/sync', { schema }, async (req) => {
-    const { mode } = req.query as { mode?: string };
+    const { mode, pageNum = 1 } = req.query as QueryParams;
     const client = await fastify.pg.connect();
-    const filteredResults = await extractSampleAudioInfo(fastify, mode);
+    const filteredResults = await extractSampleAudioInfo(fastify, pageNum, mode);
     console.log({ filteredResults, mode });
 
     if (!filteredResults.length) {
