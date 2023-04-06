@@ -156,7 +156,7 @@ async function postToSlack(fastify: FastifyInstance, mode?: string, rows?: Album
   if (!!rows) {
     const rowCount = rows?.length ?? 0;
 
-    text = `완료: 총 ${rowCount}개의 엔트리 추가${!!rowCount ? `: ${rows?.map(({ id }) => id).join(', ')}` : ''}`;
+    text = `완료: 총 ${rowCount}개의 엔트리 추가${!!rowCount ? `: ${rows?.map(({ id }) => id).join('\n')}` : ''}`;
     if (mode === 'test') {
       text = '테스트 완료';
     }
