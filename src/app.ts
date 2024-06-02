@@ -33,6 +33,8 @@ const schema = {
     'PGHOST',
     'PGPORT',
     'PGPASSWORD',
+    'PGSSLCERT',
+    'PGSSLMODE',
     'SLACK_WEBHOOK',
   ],
   properties: {
@@ -81,7 +83,13 @@ const schema = {
     PGPORT: {
       type: 'string',
     },
+    PGSSLMODE: {
+      type: 'string',
+    },
     PGPASSWORD: {
+      type: 'string',
+    },
+    PGSSLCERT: {
       type: 'string',
     },
     SLACK_WEBHOOK: {

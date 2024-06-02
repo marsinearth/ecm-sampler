@@ -29,6 +29,7 @@ const getPuppeteer = async (): Promise<Browser | void> => {
           defaultViewport: chromium.defaultViewport,
           executablePath: await chromium.executablePath,
           headless: chromium.headless,
+          ignoreHTTPSErrors: true,
         });
       } catch (_error) {
         console.warn(_error);
