@@ -31,6 +31,7 @@ const schema = {
     'PGUSER',
     'PGDATABASE',
     'PGHOST',
+    'PGPORT',
     'PGPASSWORD',
     'SLACK_WEBHOOK',
   ],
@@ -75,6 +76,9 @@ const schema = {
       type: 'string',
     },
     PGHOST: {
+      type: 'string',
+    },
+    PGPORT: {
       type: 'string',
     },
     PGPASSWORD: {
