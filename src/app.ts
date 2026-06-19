@@ -3,6 +3,7 @@ import fastifyCors from '@fastify/cors';
 import fastifyEnv from '@fastify/env';
 import postgres from '@fastify/postgres';
 import type { FastifyPluginAsync } from 'fastify';
+import { existsSync, readFileSync } from 'fs';
 import { join } from 'path';
 import albumSchema from './models/album';
 
@@ -13,6 +14,10 @@ const CORS_OPTIONS = {
   credentials: false,
   methods: ['GET', 'OPTIONS', 'POST'],
 };
+
+const DEFAULT_FETCH_QUERY = 'SELECT * FROM sample_links ORDER BY created_at DESC;';
+const DEFAULT_INSERT_QUERY =
+  'INSERT INTO sample_links (id, url, album_title, album_artist, album_image, track_title) VALUES %L ON CONFLICT (id) DO NOTHING RETURNING *;';
 
 const schema = {
   type: 'object',
@@ -26,15 +31,13 @@ const schema = {
     'ALBUM_TITLE',
     'ALBUM_ARTIST',
     'ALBUM_IMAGE',
-    'FETCH_QUERY',
-    'INSERT_QUERY',
-    'PGUSER',
-    'PGDATABASE',
-    'PGHOST',
-    'PGPORT',
-    'PGPASSWORD',
-    'PGSSLCERT',
-    'PGSSLMODE',
+    'PG_USER',
+    'PG_DATABASE',
+    'PG_HOST',
+    'PG_PORT',
+    'PG_PASSWORD',
+    'PG_SSL_CERT',
+    'PG_SSL_MODE',
     'SLACK_WEBHOOK',
   ],
   properties: {
@@ -67,29 +70,31 @@ const schema = {
     },
     FETCH_QUERY: {
       type: 'string',
+      default: DEFAULT_FETCH_QUERY,
     },
     INSERT_QUERY: {
       type: 'string',
+      default: DEFAULT_INSERT_QUERY,
     },
-    PGUSER: {
+    PG_USER: {
       type: 'string',
     },
-    PGDATABASE: {
+    PG_DATABASE: {
       type: 'string',
     },
-    PGHOST: {
+    PG_HOST: {
       type: 'string',
     },
-    PGPORT: {
+    PG_PORT: {
       type: 'string',
     },
-    PGSSLMODE: {
+    PG_SSL_MODE: {
       type: 'string',
     },
-    PGPASSWORD: {
+    PG_PASSWORD: {
       type: 'string',
     },
-    PGSSLCERT: {
+    PG_SSL_CERT: {
       type: 'string',
     },
     SLACK_WEBHOOK: {
@@ -104,6 +109,12 @@ const options = {
   dotenv: true,
 };
 
+function resolveCertPath(certPath: string) {
+  const normalizedPath = certPath.replace(/^\/+/, '');
+  const candidates = [certPath, join(process.cwd(), normalizedPath), join(__dirname, '..', normalizedPath)];
+  return candidates.find((candidate) => existsSync(candidate));
+}
+
 const app: FastifyPluginAsync = async (fastify, opts) => {
   // Read the .env file
   fastify.register(fastifyEnv, options);
@@ -113,7 +124,21 @@ const app: FastifyPluginAsync = async (fastify, opts) => {
   // add schema
   fastify.addSchema(albumSchema);
   // add postgres
-  fastify.register(postgres);
+  const sslCertPath = resolveCertPath(fastify.config.PG_SSL_CERT);
+  fastify.register(postgres, {
+    host: fastify.config.PG_HOST,
+    port: Number(fastify.config.PG_PORT),
+    user: fastify.config.PG_USER,
+    password: fastify.config.PG_PASSWORD,
+    database: fastify.config.PG_DATABASE,
+    ssl:
+      fastify.config.PG_SSL_MODE === 'require'
+        ? {
+            ca: sslCertPath ? readFileSync(sslCertPath, 'utf8') : undefined,
+            rejectUnauthorized: process.env.NODE_TLS_REJECT_UNAUTHORIZED !== '0',
+          }
+        : undefined,
+  });
   // Autoload routes
   fastify.register(AutoLoad, {
     dir: join(__dirname, 'routes'),
