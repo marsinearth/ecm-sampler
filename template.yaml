@@ -4,11 +4,50 @@ Description: >
   ecm-sampler
 
   Sample SAM Template for ecm-sampler
+Parameters:
+  Page: { Type: String }
+  ProductLink: { Type: String }
+  AudioPlayer: { Type: String }
+  Audio: { Type: String }
+  TrackTitle: { Type: String }
+  AlbumInfo: { Type: String }
+  AlbumTitle: { Type: String }
+  AlbumArtist: { Type: String }
+  AlbumImage: { Type: String }
+  SlackWebhook: { Type: String }
+  PgUser: { Type: String }
+  PgPassword: { Type: String }
+  PgHost: { Type: String }
+  PgPort: { Type: String }
+  PgDatabase: { Type: String }
+  PgSslMode: { Type: String }
+  PgSslCert: { Type: String }
+  NodeTlsRejectUnauthorized: { Type: String }
 
 # More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
 Globals:
   Function:
     Timeout: 20
+    Environment:
+      Variables:
+        PAGE: !Ref Page
+        PRODUCT_LINK: !Ref ProductLink
+        AUDIO_PLAYER: !Ref AudioPlayer
+        AUDIO: !Ref Audio
+        TRACK_TITLE: !Ref TrackTitle
+        ALBUM_INFO: !Ref AlbumInfo
+        ALBUM_TITLE: !Ref AlbumTitle
+        ALBUM_ARTIST: !Ref AlbumArtist
+        ALBUM_IMAGE: !Ref AlbumImage
+        SLACK_WEBHOOK: !Ref SlackWebhook
+        PG_USER: !Ref PgUser
+        PG_PASSWORD: !Ref PgPassword
+        PG_HOST: !Ref PgHost
+        PG_PORT: !Ref PgPort
+        PG_DATABASE: !Ref PgDatabase
+        PG_SSL_MODE: !Ref PgSslMode
+        PG_SSL_CERT: !Ref PgSslCert
+        NODE_TLS_REJECT_UNAUTHORIZED: !Ref NodeTlsRejectUnauthorized
 
 Resources:
   EcmSamplerFetch:
@@ -16,14 +55,14 @@ Resources:
     Properties:
       Handler: dist/lambda.handler
       PackageType: Zip
-      Runtime: nodejs14.x
+      Runtime: nodejs24.x
       Architectures:
         - x86_64
       FunctionUrlConfig:
         AuthType: NONE
         Cors:
           AllowOrigins:
-            - "*"
+            - '*'
       Events:
         FetchApi:
           Type: HttpApi
@@ -35,7 +74,7 @@ Resources:
     Properties:
       Handler: dist/lambda.handler
       PackageType: Zip
-      Runtime: nodejs14.x
+      Runtime: nodejs24.x
       Architectures:
         - x86_64
       Timeout: 300
@@ -44,7 +83,7 @@ Resources:
         AuthType: NONE
         Cors:
           AllowOrigins:
-            - "*"
+            - '*'
       Events:
         SyncAPI:
           Type: HttpApi # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
@@ -52,23 +91,22 @@ Resources:
             Path: /sync
             Method: ANY
 
-
 Outputs:
   # ServerlessRestApi is an implicit API created out of Events key under Serverless::Function
   # Find out more about other implicit resources you can reference within SAM
   # https://github.com/awslabs/serverless-application-model/blob/master/docs/internals/generated_resources.rst#api
   APIEndpoint:
-    Description: "API Gateway endpoint URL for Prod stage for EcmSampler function"
-    Value: !Sub "https://${ServerlessHttpApi}.execute-api.${AWS::Region}.amazonaws.com/"
+    Description: 'API Gateway endpoint URL for Prod stage for EcmSampler function'
+    Value: !Sub 'https://${ServerlessHttpApi}.execute-api.${AWS::Region}.amazonaws.com/'
   EcmSamplerFetch:
-    Description: "EcmSamplerFetch Lambda Function ARN"
+    Description: 'EcmSamplerFetch Lambda Function ARN'
     Value: !GetAtt EcmSamplerFetch.Arn
   EcmSamplerFetchIamRole:
-    Description: "Implicit IAM Role created for EcmSamplerFetch function"
+    Description: 'Implicit IAM Role created for EcmSamplerFetch function'
     Value: !GetAtt EcmSamplerFetchRole.Arn
   EcmSamplerSync:
-    Description: "EcmSamplerSync Lambda Function ARN"
+    Description: 'EcmSamplerSync Lambda Function ARN'
     Value: !GetAtt EcmSamplerSync.Arn
   EcmSamplerSyncIamRole:
-    Description: "Implicit IAM Role created for EcmSamplerSync function"
+    Description: 'Implicit IAM Role created for EcmSamplerSync function'
     Value: !GetAtt EcmSamplerSyncRole.Arn
