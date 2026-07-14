@@ -15,26 +15,72 @@ type QueryParams = {
   pageNum: number;
 };
 
-const getPuppeteer = async (): Promise<Browser | void> => {
+const isLambdaRuntime = Boolean(
+  process.env.AWS_LAMBDA_FUNCTION_NAME || process.env.LAMBDA_TASK_ROOT || process.env.AWS_EXECUTION_ENV,
+);
+
+const DEFAULT_VIEWPORT = {
+  deviceScaleFactor: 1,
+  hasTouch: false,
+  height: 1080,
+  isLandscape: true,
+  isMobile: false,
+  width: 1920,
+};
+
+type LambdaChromium = {
+  args: string[];
+  executablePath: () => Promise<string>;
+};
+
+type PuppeteerCoreModule = {
+  launch: (options: Record<string, unknown>) => Promise<Browser>;
+  defaultArgs: (options: Record<string, unknown>) => Promise<string[]>;
+};
+
+const dynamicImport = new Function('specifier', 'return import(specifier);') as (specifier: string) => Promise<any>;
+
+async function loadLambdaChromium(): Promise<LambdaChromium> {
+  const chromiumModule = await dynamicImport('@sparticuz/chromium');
+  return (chromiumModule.default ?? chromiumModule) as LambdaChromium;
+}
+
+async function loadPuppeteerCore(): Promise<PuppeteerCoreModule> {
+  const puppeteerCoreModule = await dynamicImport('puppeteer-core');
+  return (puppeteerCoreModule.default ?? puppeteerCoreModule) as PuppeteerCoreModule;
+}
+
+async function launchLambdaBrowser(): Promise<Browser> {
+  const chromium = await loadLambdaChromium();
+  const puppeteerCore = await loadPuppeteerCore();
+
+  return puppeteerCore.launch({
+    args: await puppeteerCore.defaultArgs({
+      args: chromium.args,
+      headless: 'shell',
+    }),
+    defaultViewport: DEFAULT_VIEWPORT,
+    executablePath: await chromium.executablePath(),
+    headless: 'shell',
+    ignoreHTTPSErrors: true,
+  });
+}
+
+const getPuppeteer = async (): Promise<Browser> => {
   try {
+    if (isLambdaRuntime) {
+      return await launchLambdaBrowser();
+    }
+
     const puppeteer = require('puppeteer');
     return await puppeteer.launch();
   } catch (error: any) {
-    if (error.code === 'MODULE_NOT_FOUND') {
-      console.log('Error(This package is used for local development) ', JSON.stringify(error, null, 2));
-      try {
-        const chromium = require('chrome-aws-lambda');
-        return await chromium.puppeteer.launch({
-          args: chromium.args,
-          defaultViewport: chromium.defaultViewport,
-          executablePath: await chromium.executablePath,
-          headless: chromium.headless,
-          ignoreHTTPSErrors: true,
-        });
-      } catch (_error) {
-        console.warn(_error);
-      }
+    if (!isLambdaRuntime && error.code === 'MODULE_NOT_FOUND') {
+      console.info('Local puppeteer is unavailable, falling back to the Lambda browser launcher.');
+      return await launchLambdaBrowser();
     }
+
+    throw error;
   }
 };
 
@@ -54,34 +100,35 @@ const schema = {
 
 async function withBrowser(fastify: FastifyInstance, pageNum: number, fn: WithBrowserFN, mode?: string) {
   const browser = await getPuppeteer();
-  if (browser) {
+  try {
     const page = await browser.newPage();
-    await page.goto(process.env.PAGE ? `${process.env.PAGE}/page/${pageNum}` : '');
-    let products: string[] = await page.$$eval(fastify.config.PRODUCT_LINK, (list) =>
-      list.map((el) => (el as HTMLAnchorElement).href),
-    );
-
-    if (!products?.length) {
-      throw new Error('page has been changed!');
-    }
-
-    page.close();
-
-    if (mode === 'test') {
-      // when it's test mode, it's just for checking out whether website's crawling points are valid, just process for the first detail page due to saving time
-      products = [products[0]];
-      console.log("it's on test mode!");
-    }
-
-    console.log({ products });
-
     try {
+      await page.goto(`${fastify.config.PAGE}/page/${pageNum}`, {
+        waitUntil: 'load',
+        timeout: 0,
+      });
+      let products: string[] = await page.$$eval(fastify.config.PRODUCT_LINK, (list) =>
+        list.map((el) => (el as HTMLAnchorElement).href),
+      );
+
+      if (!products?.length) {
+        throw new Error(`No product links were found on ${fastify.config.PAGE}/page/${pageNum}.`);
+      }
+
+      if (mode === 'test') {
+        // when it's test mode, it's just for checking out whether website's crawling points are valid, just process for the first detail page due to saving time
+        products = [products[0]];
+        console.log("it's on test mode!");
+      }
+
+      console.log({ products });
+
       return await fn(browser, products);
     } finally {
-      await browser.close();
+      await page.close();
     }
-  } else {
-    throw new Error('page address has been changed!');
+  } finally {
+    await browser.close();
   }
 }
 

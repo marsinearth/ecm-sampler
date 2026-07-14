@@ -135,7 +135,7 @@ const app: FastifyPluginAsync = async (fastify, opts) => {
       fastify.config.PG_SSL_MODE === 'require'
         ? {
             ca: sslCertPath ? readFileSync(sslCertPath, 'utf8') : undefined,
-            rejectUnauthorized: process.env.NODE_TLS_REJECT_UNAUTHORIZED !== '0',
+            rejectUnauthorized: true,
           }
         : undefined,
   });
