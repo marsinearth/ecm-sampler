@@ -97,6 +97,10 @@ const schema = {
     PG_SSL_CERT: {
       type: 'string',
     },
+    PG_SSL_REJECT_UNAUTHORIZED: {
+      type: 'boolean',
+      default: true,
+    },
     SLACK_WEBHOOK: {
       type: 'string',
     },
@@ -135,7 +139,7 @@ const app: FastifyPluginAsync = async (fastify, opts) => {
       fastify.config.PG_SSL_MODE === 'require'
         ? {
             ca: sslCertPath ? readFileSync(sslCertPath, 'utf8') : undefined,
-            rejectUnauthorized: true,
+            rejectUnauthorized: fastify.config.PG_SSL_REJECT_UNAUTHORIZED,
           }
         : undefined,
   });

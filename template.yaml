@@ -22,6 +22,7 @@ Parameters:
   PgDatabase: { Type: String }
   PgSslMode: { Type: String }
   PgSslCert: { Type: String }
+  PgSslRejectUnauthorized: { Type: String, Default: 'true' }
 
 # More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
 Globals:
@@ -46,6 +47,7 @@ Globals:
         PG_DATABASE: !Ref PgDatabase
         PG_SSL_MODE: !Ref PgSslMode
         PG_SSL_CERT: !Ref PgSslCert
+        PG_SSL_REJECT_UNAUTHORIZED: !Ref PgSslRejectUnauthorized
 Resources:
   EcmSamplerFetch:
     Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
